@@ -1,0 +1,9 @@
+{
+  "name": "nostr-skills-registry",
+  "private": true,
+  "type": "module",
+  "description": "Publish and discover AI skills as Nostr kind 31990 events.",
+  "dependencies": {
+    "nostr-tools": "2.25.4"
+  }
+}
