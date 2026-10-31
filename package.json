@@ -1,0 +1,17 @@
+{
+  "name": "nostr-skills-registry",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Publish and discover AI skills as Nostr kind 31990 events",
+  "scripts": {
+    "register": "node register.js",
+    "discover": "node discover.js"
+  },
+  "dependencies": {
+    "@nostr-dev-kit/ndk": "^2.14.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

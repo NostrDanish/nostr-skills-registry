@@ -1,30 +1,59 @@
-// nostr-skills-registry: publish + discover AI skills as kind:31990
-import { NDK } from '@nostr-dev-kit/ndk';
+#!/usr/bin/env node
+// Publish an AI skill card as a kind 31990 event.
+import NDK, { NDKPrivateKeySigner } from "@nostr-dev-kit/ndk";
 
-const ndk = new NDK({ explicitRelayUrls: ['wss://relay.damus.io','wss://nos.lol','wss://relay.primal.net'] });
-await ndk.connect();
+const RELAYS = [
+  "wss://relay.damus.io",
+  "wss://nos.lol",
+  "wss://relay.primal.net",
+];
 
-export async function register(name, cat, repo, pubkey) {
+function arg(flag, fallback = "") {
+  const hit = process.argv.find((a) => a === flag || a.startsWith(`${flag}=`));
+  if (!hit) return fallback;
+  if (hit.includes("=")) return hit.slice(hit.indexOf("=") + 1);
+  const i = process.argv.indexOf(hit);
+  return process.argv[i + 1] || fallback;
+}
+
+function requireHttpsRepo(repo) {
+  let u;
+  try {
+    u = new URL(repo);
+  } catch {
+    throw new Error("--repo must be an https URL");
+  }
+  if (u.protocol !== "https:") throw new Error("--repo must be https");
+  return u.toString();
+}
+
+export async function register(name, cat, repo) {
+  const secret = process.env.NOSTR_SECRET_KEY;
+  if (!secret) {
+    throw new Error("set NOSTR_SECRET_KEY (nsec1… or 64-hex). Do not pass it on argv.");
+  }
+  if (!name) throw new Error("--name is required");
+  const repoUrl = requireHttpsRepo(repo);
+  const signer = new NDKPrivateKeySigner(secret);
+  const ndk = new NDK({ explicitRelayUrls: RELAYS, signer });
+  await ndk.connect();
   const ev = ndk.event({
     kind: 31990,
-    tags: [['d', name], ['category', cat], ['repo', repo], ['p', pubkey], ['verified', 'wot']],
-    content: `AI skill: ${name} (${cat})`
+    tags: [
+      ["d", name],
+      ["category", cat],
+      ["repo", repoUrl],
+      ["k", "31990"],
+    ],
+    content: `AI skill: ${name} (${cat})`,
   });
   await ev.publish();
-  console.log('[reg] published skill', name, '->', ev.id);
+  console.log(JSON.stringify({ ok: true, name, id: ev.id, pubkey: ev.pubkey, repo: repoUrl }));
 }
 
-export async function discover(cat) {
-  const sub = ndk.subscribe({ kinds: [31990], '#category': [cat], limit: 50 });
-  const out = [];
-  sub.on('event', e => out.push({ name: e.tagValue('d'), repo: e.tagValue('repo') }));
-  await new Promise(r => setTimeout(r, 4000));
-  console.log('[reg] found', out.length, 'skills');
-  return out;
-}
-
-if (process.argv[1]?.endsWith('register.js')) {
-  const get = f => process.argv.find(a=>a.startsWith(f))?.split('=')[1];
-  if (get('--name')) await register(get('--name'), get('--cat')||'AI/DVM', get('--repo'), get('--pub')||'');
-  if (get('--discover')) await discover(get('--discover'));
+if (import.meta.url === `file://${process.argv[1]}`) {
+  register(arg("--name"), arg("--cat", "AI/DVM"), arg("--repo")).catch((err) => {
+    console.error(err.message || err);
+    process.exit(1);
+  });
 }
