@@ -1,0 +1,19 @@
+{
+  "name": "nostr-skills-registry",
+  "version": "0.2.0",
+  "private": false,
+  "type": "module",
+  "description": "Publish and discover AI skills as NIP-89 kind-31990 events",
+  "license": "MIT",
+  "bin": {
+    "nostr-skill-register": "./register.js",
+    "nostr-skill-discover": "./discover.js"
+  },
+  "scripts": {
+    "register": "node register.js",
+    "discover": "node discover.js"
+  },
+  "dependencies": {
+    "@nostr-dev-kit/ndk": "^2.14.0"
+  }
+}
